@@ -6,13 +6,14 @@ from model import ModelSpatial
 from dataset import GazeFollow
 from config import *
 from utils import imutils, evaluation
-
+import cv2
 import argparse
 import os
 import numpy as np
-from scipy.misc import imresize
+# from scipy.misc import imresize
+from cv2 import resize as imresize
 import warnings
-
+from tqdm import tqdm
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
@@ -60,7 +61,7 @@ def test():
     model.train(False)
     AUC = []; min_dist = []; avg_dist = []
     with torch.no_grad():
-        for val_batch, (val_img, val_face, val_head_channel, val_gaze_heatmap, cont_gaze, imsize, _) in enumerate(val_loader):
+        for val_batch, (val_img, val_face, val_head_channel, val_gaze_heatmap, cont_gaze, imsize, _) in tqdm(enumerate(val_loader)):
             val_images = val_img.cuda().to(device)
             val_head = val_head_channel.cuda().to(device)
             val_faces = val_face.cuda().to(device)
@@ -75,7 +76,10 @@ def test():
                 valid_gaze = valid_gaze[valid_gaze != -1].view(-1,2)
                 # AUC: area under curve of ROC
                 multi_hot = imutils.multi_hot_targets(cont_gaze[b_i], imsize[b_i])
-                scaled_heatmap = imresize(val_gaze_heatmap_pred[b_i], (imsize[b_i][1], imsize[b_i][0]), interp = 'bilinear')
+                # scaled_heatmap = imresize(val_gaze_heatmap_pred[b_i], (imsize[b_i][1], imsize[b_i][0]), interp = 'bilinear')
+                scaled_heatmap = imresize(val_gaze_heatmap_pred[b_i].cpu().numpy(),
+                                          (int(imsize[b_i][1]), int(imsize[b_i][0])),
+                                          interpolation=cv2.INTER_LINEAR)
                 auc_score = evaluation.auc(scaled_heatmap, multi_hot)
                 AUC.append(auc_score)
                 # min distance: minimum among all possible pairs of <ground truth point, predicted point>

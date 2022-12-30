@@ -17,7 +17,8 @@ def ap(label, pred):
 
 
 def argmax_pts(heatmap):
-    idx = np.unravel_index(heatmap.argmax(), heatmap.shape)
+
+    idx = np.unravel_index(heatmap.cpu().argmax(), heatmap.shape)
     pred_y, pred_x = map(float,idx)
     return pred_x, pred_y
 

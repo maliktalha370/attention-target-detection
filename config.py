@@ -1,19 +1,19 @@
 # =============================================================================
 # GazeFollow dataset dir config
 # =============================================================================
-gazefollow_train_data = "data/gazefollow"
-gazefollow_train_label = "data/gazefollow/train_annotations_release.txt"
-gazefollow_val_data = "data/gazefollow"
-gazefollow_val_label = "data/gazefollow/test_annotations_release.txt"
+gazefollow_train_data = "../../dataset/gazefollow_extended/"
+gazefollow_train_label = "../../dataset/gazefollow_extended/train_annotations_release.txt"
+gazefollow_val_data = "../../dataset/gazefollow_extended"
+gazefollow_val_label = "../../dataset/gazefollow_extended/test_annotations_release.txt"
 
 
 # =============================================================================
 # VideoAttTarget dataset dir config
 # =============================================================================
-videoattentiontarget_train_data = "data/videoatttarget/images"
-videoattentiontarget_train_label = "data/videoatttarget/annotations/train"
-videoattentiontarget_val_data = "data/videoatttarget/images"
-videoattentiontarget_val_label = "data/videoatttarget/annotations/test"
+videoattentiontarget_train_data = "../../dataset/videoAttentation/images"
+videoattentiontarget_train_label = "../../dataset/videoAttentation/annotations/train"
+videoattentiontarget_val_data = "../../dataset/videoAttentation/images"
+videoattentiontarget_val_label = "../../dataset/videoAttentation/annotations/test"
 
 
 # =============================================================================

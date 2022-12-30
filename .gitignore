@@ -8,3 +8,4 @@ data/gazefollow
 data/videoatttarget
 *.pt
 *.pyc
+.ipynb_checkpoints/

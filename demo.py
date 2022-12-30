@@ -9,12 +9,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from PIL import Image
-from scipy.misc import imresize
-
+# from scipy.misc import imresize
+from cv2 import resize as imresize
 from model import ModelSpatial
 from utils import imutils, evaluation
 from config import *
-
+import cv2
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--model_weights', type=str, help='model weights', default='model_demo.pt')

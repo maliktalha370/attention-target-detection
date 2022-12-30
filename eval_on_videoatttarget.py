@@ -1,3 +1,5 @@
+import os
+os. system('pip install opencv-python')
 import torch
 from torchvision import transforms
 import torch.nn as nn
@@ -12,8 +14,10 @@ from lib.pytorch_convolutional_rnn import convolutional_rnn
 import argparse
 import os
 import numpy as np
-from scipy.misc import imresize
+# from scipy.misc import imresize
+from cv2 import resize as imresize
 import warnings
+from tqdm import tqdm
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
@@ -67,7 +71,7 @@ def test():
     AUC = []; in_vs_out_groundtruth = []; in_vs_out_pred = []; distance = []
     chunk_size = 3
     with torch.no_grad():
-        for batch_val, (img_val, face_val, head_channel_val, gaze_heatmap_val, cont_gaze, inout_label_val, lengths_val) in enumerate(val_loader):
+        for batch_val, (img_val, face_val, head_channel_val, gaze_heatmap_val, cont_gaze, inout_label_val, lengths_val) in tqdm(enumerate(val_loader)):
             print('\tprogress = ', batch_val+1, '/', len(val_loader))
             X_pad_data_img, X_pad_sizes = pack_padded_sequence(img_val, lengths_val, batch_first=True)
             X_pad_data_head, _ = pack_padded_sequence(head_channel_val, lengths_val, batch_first=True)
