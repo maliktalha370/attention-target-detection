@@ -9,3 +9,6 @@ data/videoatttarget
 *.pt
 *.pyc
 .ipynb_checkpoints/
+*/*.jpg
+*.png
+data/demo/frames/*.jpg
