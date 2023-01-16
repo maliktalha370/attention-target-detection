@@ -12,3 +12,5 @@ data/videoatttarget
 */*.jpg
 *.png
 data/demo/frames/*.jpg
+yes
+yes.pub
