@@ -12,7 +12,7 @@ import os
 from datetime import datetime
 import shutil
 import numpy as np
-from scipy.misc import imresize
+from cv2 import resize as imresize
 from tensorboardX import SummaryWriter
 import warnings
 
@@ -20,8 +20,9 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--device", type=int, default=0, help="gpu id")
-parser.add_argument("--init_weights", type=str, default="initial_weights_for_spatial_training.pt", help="initial weights")
+parser.add_argument("--device",  default='cpu', help="gpu id")
+# parser.add_argument("--init_weights", type=str, default="initial_weights_for_spatial_training.pt", help="initial weights")
+parser.add_argument("--init_weights", type=str, help="initial weights")
 parser.add_argument("--lr", type=float, default=2.5e-4, help="learning rate")
 parser.add_argument("--batch_size", type=int, default=48, help="batch size")
 parser.add_argument("--epochs", type=int, default=70, help="number of epochs")
@@ -70,19 +71,24 @@ def train():
     np.random.seed(1)
 
     # Define device
-    device = torch.device('cuda', args.device)
+
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print('Using device:', device)
+
 
     # Load model
     print("Constructing model")
     model = ModelSpatial()
-    model.cuda().to(device)
+
     if args.init_weights:
         model_dict = model.state_dict()
-        pretrained_dict = torch.load(args.init_weights)
+        pretrained_dict = torch.load(args.model_weights,
+                                     map_location=device)
         pretrained_dict = pretrained_dict['model']
         model_dict.update(pretrained_dict)
         model.load_state_dict(model_dict)
-
+    if args.device == 'cuda':
+        model.cuda()
     # Loss functions
     mse_loss = nn.MSELoss(reduce=False) # not reducing in order to ignore outside cases
     bcelogit_loss = nn.BCEWithLogitsLoss()

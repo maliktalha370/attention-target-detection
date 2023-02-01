@@ -10,18 +10,20 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from PIL import Image
 # from scipy.misc import imresize
-from cv2 import resize as imresize
+# from skimage.transform import resize
+from cv2 import resize
 from model import ModelSpatial
 from utils import imutils, evaluation
 from config import *
 import cv2
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--model_weights', type=str, help='model weights', default='model_demo.pt')
-parser.add_argument('--image_dir', type=str, help='images', default='data/demo/frames')
-parser.add_argument('--head', type=str, help='head bounding boxes', default='data/demo/person1.txt')
-parser.add_argument('--vis_mode', type=str, help='heatmap or arrow', default='heatmap')
-parser.add_argument('--out_threshold', type=int, help='out-of-frame target dicision threshold', default=100)
+# parser.add_argument('--model_weights', type=str, help='model weights', default='model_demo.pt')
+parser.add_argument('--model_weights', type=str, help='model weights', default='trained_model/epoch_18_weights.pt')
+parser.add_argument('--image_dir', type=str, help='images', default='data/gaze_follow_test/frames')
+parser.add_argument('--head', type=str, help='head bounding boxes', default='data/gaze_follow_test/test.txt')
+parser.add_argument('--vis_mode', type=str, help='heatmap or arrow', default='arrow')
+parser.add_argument('--out_threshold', type=int, help='out-of-frame target dicision threshold', default=200)
 args = parser.parse_args()
 
 
@@ -46,12 +48,17 @@ def run():
 
     model = ModelSpatial()
     model_dict = model.state_dict()
-    pretrained_dict = torch.load(args.model_weights)
+
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print('Using device:', device)
+    pretrained_dict = torch.load(args.model_weights,
+                                 map_location=device)
+
     pretrained_dict = pretrained_dict['model']
     model_dict.update(pretrained_dict)
     model.load_state_dict(model_dict)
-
-    model.cuda()
+    if torch.cuda.is_available():
+        model.cuda()
     model.train(False)
 
     with torch.no_grad():
@@ -69,44 +76,41 @@ def run():
             head_channel = imutils.get_head_box_channel(head_box[0], head_box[1], head_box[2], head_box[3], width, height,
                                                         resolution=input_resolution).unsqueeze(0)
 
-            head = head.unsqueeze(0).cuda()
-            frame = frame.unsqueeze(0).cuda()
-            head_channel = head_channel.unsqueeze(0).cuda()
+            head = head.unsqueeze(0)
+            frame = frame.unsqueeze(0)
+            head_channel = head_channel.unsqueeze(0)
 
             # forward pass
             raw_hm, _, inout = model(frame, head_channel, head)
-
             # heatmap modulation
             raw_hm = raw_hm.cpu().detach().numpy() * 255
             raw_hm = raw_hm.squeeze()
             inout = inout.cpu().detach().numpy()
             inout = 1 / (1 + np.exp(-inout))
             inout = (1 - inout) * 255
-            norm_map = imresize(raw_hm, (height, width)) - inout
+            norm_map = resize(raw_hm, (height, width)) - inout
 
-            # vis
-            plt.close()
-            fig = plt.figure()
-            fig.canvas.manager.window.move(0,0)
-            plt.axis('off')
-            plt.imshow(frame_raw)
+            print(inout)
+            # # MyVis
+            head_box = list(map(int, head_box))
+            frame_raw = np.array(frame_raw)
+            cv2.rectangle(frame_raw, (head_box[0], head_box[1]), (head_box[2], head_box[3]), (255, 0, 0), 2)
+            if inout < args.out_threshold:  # in-frame gaze
+                pred_x, pred_y = evaluation.argmax_pts(raw_hm)
+                norm_p = [pred_x / output_resolution, pred_y / output_resolution]
+                cv2.circle(frame_raw, (int(norm_p[0] * width), int(norm_p[1] * height)), int(height / 50.0),  (255,0,0), -1)
+                # cv2.line(frame_raw, (int(norm_p[0] * width), int((head_box[0] + head_box[2]) / 2)),
+                #          (int(norm_p[1] * height), int((head_box[1] + head_box[3]) / 2)), (0,255,0), 2)
+                starting_point = ((head_box[0] + head_box[2]) // 2, (head_box[1] + head_box[3]) // 2)
+                ending_point = (int(norm_p[0] * width), int(norm_p[1] * height))
+                cv2.line(frame_raw, starting_point, ending_point,(255, 0, 0), 5)
 
-            ax = plt.gca()
-            rect = patches.Rectangle((head_box[0], head_box[1]), head_box[2]-head_box[0], head_box[3]-head_box[1], linewidth=2, edgecolor=(0,1,0), facecolor='none')
-            ax.add_patch(rect)
+            screen = cv2.cvtColor(frame_raw, cv2.COLOR_RGB2BGR)
+            cv2.imshow('Frame', screen)
 
-            if args.vis_mode == 'arrow':
-                if inout < args.out_threshold: # in-frame gaze
-                    pred_x, pred_y = evaluation.argmax_pts(raw_hm)
-                    norm_p = [pred_x/output_resolution, pred_y/output_resolution]
-                    circ = patches.Circle((norm_p[0]*width, norm_p[1]*height), height/50.0, facecolor=(0,1,0), edgecolor='none')
-                    ax.add_patch(circ)
-                    plt.plot((norm_p[0]*width,(head_box[0]+head_box[2])/2), (norm_p[1]*height,(head_box[1]+head_box[3])/2), '-', color=(0,1,0,1))
-            else:
-                plt.imshow(norm_map, cmap = 'jet', alpha=0.2, vmin=0, vmax=255)
-
-            plt.show(block=False)
-            plt.pause(0.2)
+            # Press Q on keyboard to  exit
+            if cv2.waitKey(25) & 0xFF == ord('q'):
+                break
 
         print('DONE!')
 

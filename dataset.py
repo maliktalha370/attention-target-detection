@@ -53,7 +53,6 @@ class GazeFollow(Dataset):
         self.data_dir = data_dir
         self.transform = transform
         self.test = test
-
         self.input_size = input_size
         self.output_size = output_size
         self.imshow = imshow

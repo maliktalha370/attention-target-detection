@@ -1,4 +1,4 @@
-name: myenv
+name: attent-tgt
 channels:
   - conda-forge
   - anaconda
