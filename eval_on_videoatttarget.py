@@ -1,4 +1,5 @@
 import os
+import cv2
 os. system('pip install opencv-python')
 import torch
 from torchvision import transforms
@@ -115,7 +116,9 @@ def test():
                         multi_hot = (multi_hot > 0).float() * 1 # make GT heatmap as binary labels
                         multi_hot = misc.to_numpy(multi_hot)
 
-                        scaled_heatmap = imresize(deconv[b_i].squeeze(), (output_resolution, output_resolution), interp = 'bilinear')
+                        scaled_heatmap = imresize(deconv[b_i].squeeze().cpu().numpy(),
+                                                  (output_resolution, output_resolution),
+                                                  interpolation=cv2.INTER_LINEAR)
                         auc_score = evaluation.auc(scaled_heatmap, multi_hot)
                         AUC.append(auc_score)
 
