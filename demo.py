@@ -152,7 +152,8 @@ class Inference:
                     starting_point = ((head_box[0] + head_box[2]) // 2, (head_box[1] + head_box[3]) // 2)
                     ending_point = (int(norm_p[0] * width), int(norm_p[1] * height))
                     return_pnts.append([starting_point, ending_point])
-                return_pnts.append([None, None])
+                else:
+                    return_pnts.append([None, None])
             return return_pnts
 
 if __name__ == "__main__":
@@ -190,7 +191,7 @@ if __name__ == "__main__":
         img_cp = np.array(frame_raw)
 
         for starting_point, ending_point in return_pnts:
-            print(starting_point, ending_point)
+            # print(starting_point, ending_point)
             if starting_point != None and ending_point != None:
                 # r = random.randint(0, 255)
                 # g = random.randint(0, 255)
