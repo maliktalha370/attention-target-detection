@@ -161,15 +161,16 @@ if __name__ == "__main__":
     # parser.add_argument('--image_dir', type=str, help='images', default='data/gaze_follow_test/frames')
     # parser.add_argument('--head', type=str, help='head bounding boxes', default='data/gaze_follow_test/test.txt')
     # args = parser.parse_args()
-    MODEL_WEIGHTS = 'trained_model/epoch_18_weights.pt'
-    IMAGE_DIR = 'data/elm_gaze/frames'
-    HEAD = 'data/elm_gaze/test.txt'
+    MODEL_WEIGHTS = 'trained_model/epoch_25_weights.pt'
+    IMAGE_DIR = '../../elm_Dataset/Video2/subsample/images/'
+    csv_path = '../../elm_Dataset/Video2/subsample/all_heads.txt'
+    # HEAD = 'data/elm_gaze/test.txt'
 
     obj = Inference(MODEL_WEIGHTS)
 
     column_names = ['frame', 'left', 'top', 'right', 'bottom']
-    df = pd.read_csv(HEAD, names=column_names, index_col=0)
-    df['left'] -= (df['right'] - df['left']) * 0.1
+    df = pd.read_csv(csv_path, names=column_names, index_col=0)
+    df['left'] -= (df['right'] - df['left']) * 0.1? 1
     df['right'] += (df['right'] - df['left']) * 0.1
     df['top'] -= (df['bottom'] - df['top']) * 0.1
     df['bottom'] += (df['bottom'] - df['top']) * 0.1
