@@ -14,6 +14,8 @@ from datetime import datetime
 import shutil
 import numpy as np
 import warnings
+import wandb
+# from tensorboardX import SummaryWriter
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
@@ -29,7 +31,7 @@ parser.add_argument("--save_every", type=int, default=1, help="save every ___ ep
 parser.add_argument("--log_dir", type=str, default="logs", help="directory to save log files")
 args = parser.parse_args()
 
-
+os.environ['WANDB_API_KEY'] = 'ec3fc69ebd5da6554e0113382354ac751514057f'
 def _get_transform():
     transform_list = []
     transform_list.append(transforms.Resize((input_resolution, input_resolution)))
@@ -39,6 +41,7 @@ def _get_transform():
 
 
 def train():
+    # wandb.init(entity='elm-attention-pipeline', project='attention-target-detection', sync_tensorboard=True)
     transform = _get_transform()
 
     # Prepare data
@@ -57,7 +60,7 @@ def train():
     if os.path.exists(logdir):
         shutil.rmtree(logdir)
     os.makedirs(logdir)
-
+    # writer = SummaryWriter(logdir)
     np.random.seed(1)
 
     # Define device
@@ -166,7 +169,8 @@ def train():
             # save the model
             checkpoint = {'model': model.state_dict()}
             torch.save(checkpoint, os.path.join(logdir, 'epoch_%02d_weights.pt' % (ep+1)))
-
+            # writer.add_scalar("Train Loss", total_loss, global_step=step)
+    # wandb.finish()
 
 def video_pack_sequences(in_batch):
     """

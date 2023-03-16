@@ -1,5 +1,4 @@
 import os
-import cv2
 os. system('pip install opencv-python')
 import torch
 from torchvision import transforms
@@ -13,7 +12,7 @@ from utils import imutils, evaluation, misc
 from lib.pytorch_convolutional_rnn import convolutional_rnn
 
 import argparse
-import os
+import cv2
 import numpy as np
 # from scipy.misc import imresize
 from cv2 import resize as imresize
@@ -74,12 +73,12 @@ def test():
     with torch.no_grad():
         for batch_val, (img_val, face_val, head_channel_val, gaze_heatmap_val, cont_gaze, inout_label_val, lengths_val) in tqdm(enumerate(val_loader)):
             print('\tprogress = ', batch_val+1, '/', len(val_loader))
-            X_pad_data_img, X_pad_sizes = pack_padded_sequence(img_val, lengths_val, batch_first=True)
-            X_pad_data_head, _ = pack_padded_sequence(head_channel_val, lengths_val, batch_first=True)
-            X_pad_data_face, _ = pack_padded_sequence(face_val, lengths_val, batch_first=True)
-            Y_pad_data_cont_gaze, _ = pack_padded_sequence(cont_gaze, lengths_val, batch_first=True)
-            Y_pad_data_heatmap, _ = pack_padded_sequence(gaze_heatmap_val, lengths_val, batch_first=True)
-            Y_pad_data_inout, _ = pack_padded_sequence(inout_label_val, lengths_val, batch_first=True)
+            X_pad_data_img, X_pad_sizes = pack_padded_sequence(img_val, lengths_val, batch_first=True)[:2]
+            X_pad_data_head, _ = pack_padded_sequence(head_channel_val, lengths_val, batch_first=True)[:2]
+            X_pad_data_face, _ = pack_padded_sequence(face_val, lengths_val, batch_first=True)[:2]
+            Y_pad_data_cont_gaze, _ = pack_padded_sequence(cont_gaze, lengths_val, batch_first=True)[:2]
+            Y_pad_data_heatmap, _ = pack_padded_sequence(gaze_heatmap_val, lengths_val, batch_first=True)[:2]
+            Y_pad_data_inout, _ = pack_padded_sequence(inout_label_val, lengths_val, batch_first=True)[:2]
 
             hx = (torch.zeros((num_lstm_layers, args.batch_size, 512, 7, 7)).cuda(device),
                   torch.zeros((num_lstm_layers, args.batch_size, 512, 7, 7)).cuda(device)) # (num_layers, batch_size, feature dims)
@@ -104,7 +103,7 @@ def test():
 
                 # forward pass
                 deconv, inout_val, hx = model(X_pad_data_slice_img, X_pad_data_slice_head, X_pad_data_slice_face, \
-                                                         hidden_scene=prev_hx, batch_sizes=X_pad_sizes_slice)
+                                                         hidden_scene=prev_hx, batch_sizes=X_pad_sizes_slice.cpu())
 
                 for b_i in range(len(Y_pad_data_slice_cont_gaze)):
                     if Y_pad_data_slice_inout[b_i]: # ONLY for 'inside' cases
@@ -116,6 +115,7 @@ def test():
                         multi_hot = (multi_hot > 0).float() * 1 # make GT heatmap as binary labels
                         multi_hot = misc.to_numpy(multi_hot)
 
+                        # scaled_heatmap = imresize(deconv[b_i].squeeze(), (output_resolution, output_resolution), interp = 'bilinear')
                         scaled_heatmap = imresize(deconv[b_i].squeeze().cpu().numpy(),
                                                   (output_resolution, output_resolution),
                                                   interpolation=cv2.INTER_LINEAR)
@@ -193,3 +193,4 @@ def video_pack_sequences(in_batch):
 
 if __name__ == "__main__":
     test()
+

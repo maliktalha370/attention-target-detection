@@ -1,4 +1,4 @@
-# CVPR 2020 - Detecting Attended Visual Targets in Video
+    # CVPR 2020 - Detecting Attended Visual Targets in Video
 ![](misc/teaser.gif)
 
 ## Overview

@@ -15,14 +15,15 @@ import numpy as np
 from cv2 import resize as imresize
 from tensorboardX import SummaryWriter
 import warnings
+import wandb
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
+# Your training code using TensorBoard
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--device",  default='cpu', help="gpu id")
-# parser.add_argument("--init_weights", type=str, default="initial_weights_for_spatial_training.pt", help="initial weights")
-parser.add_argument("--init_weights", type=str, help="initial weights")
+parser.add_argument("--device", type=int, default=0, help="gpu id")
+parser.add_argument("--init_weights", type=str, default="initial_weights_for_spatial_training.pt", help="initial weights")
 parser.add_argument("--lr", type=float, default=2.5e-4, help="learning rate")
 parser.add_argument("--batch_size", type=int, default=48, help="batch size")
 parser.add_argument("--epochs", type=int, default=70, help="number of epochs")
@@ -30,6 +31,8 @@ parser.add_argument("--print_every", type=int, default=100, help="print every __
 parser.add_argument("--eval_every", type=int, default=500, help="evaluate every ___ iterations")
 parser.add_argument("--save_every", type=int, default=1, help="save every ___ epochs")
 parser.add_argument("--log_dir", type=str, default="logs", help="directory to save log files")
+parser.add_argument("--wandb", type=str, default="elm-GazeFollow", help="Wandb Run name")
+
 args = parser.parse_args()
 
 
@@ -68,27 +71,28 @@ def train():
     os.makedirs(logdir)
 
     writer = SummaryWriter(logdir)
+    # Start a wandb run with `sync_tensorboard=True`
+
+    wandb.tensorboard.patch(root_logdir=logdir)
+    wandb.init(entity='maliktalha1996', project='elm-attention-custom', sync_tensorboard=True)
+    wandb.run.name = 'GazeFollow-Custom'
+
     np.random.seed(1)
 
     # Define device
-
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    print('Using device:', device)
-
+    device = torch.device('cuda', args.device)
 
     # Load model
     print("Constructing model")
     model = ModelSpatial()
-
+    model.cuda().to(device)
     if args.init_weights:
         model_dict = model.state_dict()
-        pretrained_dict = torch.load(args.model_weights,
-                                     map_location=device)
+        pretrained_dict = torch.load(args.init_weights)
         pretrained_dict = pretrained_dict['model']
         model_dict.update(pretrained_dict)
         model.load_state_dict(model_dict)
-    if args.device == 'cuda':
-        model.cuda()
+
     # Loss functions
     mse_loss = nn.MSELoss(reduce=False) # not reducing in order to ignore outside cases
     bcelogit_loss = nn.BCEWithLogitsLoss()

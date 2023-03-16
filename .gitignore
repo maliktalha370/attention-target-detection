@@ -9,3 +9,7 @@ data/videoatttarget
 *.pt
 *.pyc
 .ipynb_checkpoints/
+config.py
+wandb/*
+.idea/
+*.PNG

@@ -6,18 +6,20 @@ from model import ModelSpatial
 from dataset import GazeFollow
 from config import *
 from utils import imutils, evaluation
-from tqdm import tqdm
+import cv2
 import argparse
 import os
 import numpy as np
 # from scipy.misc import imresize
 from cv2 import resize as imresize
 import warnings
-import cv2
-
+from tqdm import tqdm
 warnings.simplefilter(action='ignore', category=FutureWarning)
+
+
 parser = argparse.ArgumentParser()
-parser.add_argument("--model_weights", type=str, default="trained_model/epoch_18_weights.pt", help="model weights")
+parser.add_argument("--device", type=int, default=0, help="gpu id")
+parser.add_argument("--model_weights", type=str, default="model_gazefollow.pt", help="model weights")
 parser.add_argument("--batch_size", type=int, default=48, help="batch size")
 args = parser.parse_args()
 
@@ -31,6 +33,7 @@ def _get_transform():
 
 
 def test():
+
     transform = _get_transform()
 
     # Prepare data
@@ -42,15 +45,15 @@ def test():
                                                shuffle=True,
                                                num_workers=0)
 
+    # Define device
+    device = torch.device('cuda', args.device)
 
     # Load model
     print("Constructing model")
     model = ModelSpatial()
+    model.cuda().to(device)
     model_dict = model.state_dict()
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    print('Using device:', device)
-    pretrained_dict = torch.load(args.model_weights,
-                                 map_location=device)
+    pretrained_dict = torch.load(args.model_weights)
     pretrained_dict = pretrained_dict['model']
     model_dict.update(pretrained_dict)
     model.load_state_dict(model_dict)
@@ -60,11 +63,10 @@ def test():
     AUC = []; min_dist = []; avg_dist = []
     with torch.no_grad():
         for val_batch, (val_img, val_face, val_head_channel, val_gaze_heatmap, cont_gaze, imsize, _) in tqdm(enumerate(val_loader)):
-            print(f'{val_batch} DONE !!!')
-            val_images = val_img
-            val_head = val_head_channel
-            val_faces = val_face
-            val_gaze_heatmap = val_gaze_heatmap
+            val_images = val_img.cuda().to(device)
+            val_head = val_head_channel.cuda().to(device)
+            val_faces = val_face.cuda().to(device)
+            val_gaze_heatmap = val_gaze_heatmap.cuda().to(device)
             val_gaze_heatmap_pred, val_attmap, val_inout_pred = model(val_images, val_head, val_faces)
             val_gaze_heatmap_pred = val_gaze_heatmap_pred.squeeze(1)
 
@@ -75,12 +77,8 @@ def test():
                 valid_gaze = valid_gaze[valid_gaze != -1].view(-1,2)
                 # AUC: area under curve of ROC
                 multi_hot = imutils.multi_hot_targets(cont_gaze[b_i], imsize[b_i])
-                # scaled_heatmap = imresize(val_gaze_heatmap_pred[b_i], (imsize[b_i][1], imsize[b_i][0]),
-                #                           interp = 'bilinear')
-
-                # np.array(Image.fromarray(valid_lr_img[0]).resize((size[0] * 4, size[1] * 4), resample=Image.BICUBIC))
-
-                scaled_heatmap = imresize(np.array(val_gaze_heatmap_pred[b_i]),
+                # scaled_heatmap = imresize(val_gaze_heatmap_pred[b_i], (imsize[b_i][1], imsize[b_i][0]), interp = 'bilinear')
+                scaled_heatmap = imresize(val_gaze_heatmap_pred[b_i].cpu().numpy(),
                                           (int(imsize[b_i][1]), int(imsize[b_i][0])),
                                           interpolation=cv2.INTER_LINEAR)
                 auc_score = evaluation.auc(scaled_heatmap, multi_hot)
