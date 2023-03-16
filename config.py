@@ -1,10 +1,10 @@
 # =============================================================================
 # GazeFollow dataset dir config
 # =============================================================================
-gazefollow_train_data = "../../gazefollow_extended/"
-gazefollow_train_label = "../../gazefollow_extended/train_annotations_release.txt"
-gazefollow_val_data = "../../gazefollow_extended"
-gazefollow_val_label = "../../gazefollow_extended/test_annotations_release.txt"
+gazefollow_train_data = "../../elm_Dataset/"
+gazefollow_train_label = "../../elm_Dataset/elm_attention/train_annotations_elm.txt"
+gazefollow_val_data = "../../elm_Dataset/"
+gazefollow_val_label = "../../elm_Dataset/elm_attention/val_annotations_elm.txt"
 
 
 # =============================================================================
